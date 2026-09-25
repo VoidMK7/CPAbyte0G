@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HillsByte Proof</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{font-family:Inter,Arial,sans-serif;background:#07130e;color:#f2fff7;margin:0;padding:20px}
+main{max-width:760px;margin:0 auto}
+.card{background:#0c1e15;border:1px solid #1c4a34;border-radius:16px;padding:18px;margin:12px 0}
+h1{margin:0 0 6px}.muted{color:#8bb5a0}.ok{color:#65e6a2}.err{color:#ff9da7}
+button,input,textarea{font:inherit;padding:11px;border-radius:10px;border:1px solid #244f3b;background:#0d2118;color:white;width:100%}
+button{cursor:pointer;background:#19b86b;border:0;font-weight:700}
+button.secondary{background:#173326}.danger{background:#a52c3a}
+textarea{min-height:90px;resize:vertical}.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:150px}
+.proof{max-width:100%;max-height:240px;border-radius:12px;margin:5px}.hidden{display:none}
+.small{font-size:13px}.status{padding:10px;border-radius:10px;background:#091910}
+</style>
+</head>
+<body>
+<main>
+  <h1>HillsByte Proof</h1>
+  <div class="muted">Task and proof submission system</div>
+  <div id="app" class="card">Loading…</div>
+</main>
+<script>
+const tg = window.Telegram?.WebApp;
+tg?.ready();
+tg?.expand();
+
+const app = document.getElementById('app');
+const headers = () => ({
+  'content-type':'application/json',
+  'X-Telegram-Init-Data': tg?.initData || ''
+});
+async function api(url, opt={}) {
+  const r = await fetch(url, {...opt, headers:{...headers(), ...(opt.headers||{})}});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw Error(j.error || `Request failed (${r.status})`);
+  return j;
+}
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function showPublicStatus(){
+  app.innerHTML = `
+    <div class="status">
+      <b>Proof Bot is online.</b>
+      <p class="muted">This page is served correctly by Render. To use tasks and submit proof, open it from the Telegram Mini App.</p>
+      <p><a href="/health" style="color:#65e6a2">Check server health</a></p>
+    </div>`;
+}
+async function load(){
+  if(!tg?.initData){ showPublicStatus(); return; }
+  try{
+    const [me,t] = await Promise.all([api('/api/me'), api('/api/tasks')]);
+    let html = `<div class="card"><b>${esc(me.user.first_name||'User')}</b><div class="muted">Role: ${esc(me.role)} · Balance: $${Number(me.user.balance||0).toFixed(2)}</div></div>`;
+    if(!t.tasks.length) html += `<div class="card"><b>No active tasks yet.</b><p class="muted">Tasks will appear here when an administrator creates them.</p></div>`;
+    for(const x of t.tasks){
+      html += `<div class="card">
+        <h2>${esc(x.title)}</h2><p>${esc(x.description)}</p>
+        <b>Reward: $${Number(x.reward).toFixed(2)}</b>
+        <form onsubmit="submitProof(event,${x.id})">
+          <p><input type="file" name="proofs" accept="image/*" multiple required></p>
+          <p><textarea name="note" placeholder="Optional note"></textarea></p>
+          <button>Submit proof</button>
+        </form>
+      </div>`;
+    }
+    if(me.role==='admin'||me.role==='reviewer'){
+      html += `<div class="card"><h2>Review Center</h2><button onclick="review()">Open pending proofs</button><div id="review"></div></div>`;
+    }
+    if(me.role==='admin'){
+      html += `<div class="card"><h2>Admin</h2>
+        <input id="tt" placeholder="Task title">
+        <textarea id="td" placeholder="Task instructions"></textarea>
+        <input id="tr" type="number" min="0" step="0.01" value="0.70">
+        <button onclick="createTask()">Create task</button>
+      </div>`;
+    }
+    app.innerHTML = html;
+  }catch(e){
+    app.innerHTML = `<div class="err"><b>Could not load the app.</b><p>${esc(e.message)}</p><p class="muted">Make sure the page was opened inside Telegram and the Telegram bot token is configured on Render.</p></div>`;
+  }
+}
+async function submitProof(e,id){
+  e.preventDefault();
+  const f = new FormData(e.target);
+  f.append('task_id',id);
+  try{
+    const r = await fetch('/api/submissions',{method:'POST',headers:{'X-Telegram-Init-Data':tg?.initData||''},body:f});
+    const j = await r.json();
+    if(!r.ok) throw Error(j.error||'Submission failed');
+    alert('Proof submitted.');
+    load();
+  }catch(x){ alert(x.message); }
+}
+async function review(){
+  try{
+    const r = await api('/api/reviewer/queue');
+    const box = document.getElementById('review');
+    box.innerHTML = r.submissions.length ? r.submissions.map(s=>`
+      <div class="card">
+        <b>${esc(s.tasks.title)}</b>
+        <div class="muted">@${esc(s.users.username||'user')} · $${Number(s.tasks.reward).toFixed(2)}</div>
+        ${(s.proof_urls||[]).map(u=>`<img class="proof" src="${esc(u)}" alt="Proof image">`).join('')}
+        <p>${esc(s.note||'')}</p>
+        <div class="row"><button onclick="approve(${s.id})">Approve</button><button class="danger" onclick="rejectIt(${s.id})">Reject</button></div>
+      </div>`).join('') : '<p class="muted">No pending proofs.</p>';
+  }catch(e){ alert(e.message); }
+}
+async function approve(id){try{await api('/api/reviewer/'+id+'/approve',{method:'POST'});review()}catch(e){alert(e.message)}}
+async function rejectIt(id){
+  const reason=prompt('Reason for rejection?')||'Proof did not meet the task requirements.';
+  try{await api('/api/reviewer/'+id+'/reject',{method:'POST',body:JSON.stringify({reason})});review()}catch(e){alert(e.message)}
+}
+async function createTask(){
+  try{
+    const title=document.getElementById('tt').value.trim();
+    const description=document.getElementById('td').value.trim();
+    const reward=Number(document.getElementById('tr').value);
+    if(!title||!description||!Number.isFinite(reward)||reward<0) throw Error('Enter a title, description and valid reward.');
+    await api('/api/admin/tasks',{method:'POST',body:JSON.stringify({title,description,reward})});
+    alert('Task created.');
+    load();
+  }catch(e){alert(e.message)}
+}
+load();
+</script>
+</body>
+</html>
