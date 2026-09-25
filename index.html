@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07130e">
+  <title>HillsByte Proof Center</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main id="root">
+    <header class="topbar">
+      <div>
+        <div class="brand">HillsByte</div>
+        <div class="subtitle">Proof Center</div>
+      </div>
+      <span id="connection" class="pill">Connecting…</span>
+    </header>
+
+    <section id="loading" class="card">
+      <h1>HillsByte Proof Center</h1>
+      <p>Loading the task system…</p>
+    </section>
+
+    <section id="publicHome" class="card hidden">
+      <h1>HillsByte Proof Center</h1>
+      <p>The server is online. Open this page from your Telegram bot to authenticate and submit task proof.</p>
+      <a class="button" href="/health">Server health</a>
+    </section>
+
+    <section id="userPanel" class="hidden">
+      <div id="profile" class="card"></div>
+      <div class="section-head">
+        <h2>Available Tasks</h2>
+        <button id="refreshTasks" class="secondary small-btn">Refresh</button>
+      </div>
+      <div id="tasks"></div>
+      <div class="section-head">
+        <h2>My Submissions</h2>
+        <button id="refreshMine" class="secondary small-btn">Refresh</button>
+      </div>
+      <div id="mine"></div>
+    </section>
+
+    <section id="reviewPanel" class="hidden">
+      <div class="section-head"><h2>Review Center</h2><button id="refreshQueue" class="secondary small-btn">Refresh</button></div>
+      <div id="queue"></div>
+    </section>
+
+    <section id="adminPanel" class="hidden">
+      <div class="section-head"><h2>Admin Panel</h2><button id="refreshAdmin" class="secondary small-btn">Refresh</button></div>
+      <div class="card">
+        <h3>Create Task</h3>
+        <form id="taskForm">
+          <input id="taskTitle" placeholder="Task title" required>
+          <textarea id="taskDescription" placeholder="Task instructions" required></textarea>
+          <input id="taskReward" type="number" min="0" step="0.01" value="0.70" placeholder="Reward" required>
+          <button>Create Task</button>
+        </form>
+      </div>
+      <div id="adminTasks"></div>
+      <div class="card">
+        <h3>Assign Role</h3>
+        <form id="roleForm">
+          <input id="roleTelegramId" inputmode="numeric" placeholder="Telegram ID" required>
+          <select id="roleName"><option value="reviewer">Reviewer</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select>
+          <button>Save Role</button>
+        </form>
+      </div>
+      <div id="roles"></div>
+    </section>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+  </main>
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
