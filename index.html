@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07130f">
+  <title>HillsByte Proof Center</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div><div class="eyebrow">HILLSBYTE</div><h1>Proof Center</h1></div>
+    <div id="role" class="pill">Connecting…</div>
+  </header>
+
+  <section id="login" class="card center">
+    <div class="orb">✓</div>
+    <h2>Open inside Telegram</h2>
+    <p>This Proof Center uses Telegram's signed Web App identity. Open it from the HillsByte Proof Bot.</p>
+    <button id="retry" onclick="authenticate()">Authenticate</button>
+    <div id="loginError" class="error"></div>
+  </section>
+
+  <main id="userApp" hidden>
+    <section class="card hero">
+      <span class="eyebrow">SUBMIT PROOF</span>
+      <h2>Send your screenshot</h2>
+      <p>Choose the task, upload the screenshot, and submit. Task details and rewards are verified server-side by HillsByte.</p>
+      <div class="field"><label>Task ID</label><input id="taskId" placeholder="Enter the task ID" autocomplete="off"></div>
+      <div class="field"><label>Screenshot</label><input id="screenshot" type="file" accept="image/jpeg,image/png,image/webp"></div>
+      <button id="submitBtn" onclick="submitProof()">Submit proof</button>
+      <div id="submitMessage" class="message"></div>
+    </section>
+    <section class="card"><div class="sectionHead"><h3>My submissions</h3><button class="secondary" onclick="loadMySubmissions()">Refresh</button></div><div id="mySubmissions"></div></section>
+  </main>
+
+  <main id="adminApp" hidden>
+    <nav class="tabs">
+      <button data-tab="dashboard" class="active">📊 Dashboard</button>
+      <button data-tab="proofs">🖼 Proofs</button>
+      <button data-tab="users">👥 Users</button>
+      <button data-tab="moderators" id="modsTab">👮 Moderators</button>
+    </nav>
+    <section id="dashboard" class="tab">
+      <div class="stats"><div class="stat"><span>Pending</span><b id="pending">0</b></div><div class="stat"><span>Approved today</span><b id="approved">0</b></div><div class="stat"><span>Rejected today</span><b id="rejected">0</b></div><div class="stat"><span>Total submissions</span><b id="total">0</b></div></div>
+      <div class="card"><h3>Recent activity</h3><div id="activity"></div></div>
+    </section>
+    <section id="proofs" class="tab" hidden>
+      <div class="toolbar card"><div class="search"><input id="search" placeholder="Search username, Telegram ID, task or submission…"><button onclick="loadProofs()">Search</button></div><div class="row"><select id="status" onchange="loadProofs()"><option value="">All statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select><select id="sort" onchange="loadProofs()"><option value="submitted_at">Newest</option><option value="reviewed_at">Reviewed</option><option value="task_name">Task</option><option value="status">Status</option></select></div></div>
+      <div class="card bulk" id="bulk" hidden><span id="selectedCount">0 selected</span><button class="danger" onclick="deleteSelected()">Delete reviewed</button><button class="danger outline" onclick="deleteAllReviewed()">Delete ALL reviewed</button></div>
+      <div id="proofList"></div>
+    </section>
+    <section id="users" class="tab" hidden><div class="card"><h3>User lookup</h3><div class="search"><input id="userId" placeholder="Telegram ID"><button onclick="loadUser()">Open</button></div></div><div id="userView"></div></section>
+    <section id="moderators" class="tab" hidden><div class="card"><h3>Reviewer management</h3><p class="muted">Only the owner can add, disable or remove moderators.</p><div class="row"><input id="modId" placeholder="Telegram ID"><input id="modName" placeholder="Name"><input id="modUsername" placeholder="@username"><button onclick="addMod()">Add</button></div></div><div class="card" id="modsList"></div></section>
+  </main>
+</div>
+<div id="modal" class="modal" hidden><div class="modalBox"><button class="close" onclick="closeModal()">×</button><div id="modalContent"></div></div></div>
+<script src="/app.js"></script>
+</body>
+</html>
